@@ -19,8 +19,8 @@ test(`Should create issue with customfield`, async () => {
       servicedesk: projectKey,
       issuetype: issuetypeName,
       summary: 'This is summary ref/head/blah',
-      description: 'This is description ref/head/blah',
-      fields: '{"customfield_10171" : "test"}',
+      description: '### Title.\nThis is description ref/head/blah.',
+      fields: '{"customfield_10171" : "test", "custom_markdown": "### a"}',
     },
     config,
   })
@@ -55,8 +55,9 @@ test(`Should create issue with customfield`, async () => {
     requestTypeId: "11001",
     requestFieldValues: {
       summary: 'This is summary ref/head/blah',
-      description: 'This is description ref/head/blah',
+      description: 'h3. Title.\nThis is description ref/head/blah.',
       customfield_10171: 'test',
+      custom_markdown: "h3. a"
     }
   })
 

@@ -1,4 +1,5 @@
 const Jira = require('./common/net/Jira')
+const j2m = require('jira2md')
 
 module.exports = class {
   constructor ({ githubEvent, argv, config }) {
@@ -33,11 +34,15 @@ module.exports = class {
 
     let requestFieldValues = {
       "summary": argv.summary,
-      "description": argv.description,
+      "description": this.translateMarkdown(argv.description),
     }
 
     if (argv.fields) {
-      const fields = JSON.parse(argv.fields)
+      let fields = JSON.parse(argv.fields)
+      for (const [key, value] of Object.entries(fields)) {
+        if ( typeof value === 'string' ) fields[key] = this.translateMarkdown(value)
+      }
+
       requestFieldValues = {...requestFieldValues, ...fields}
     }
 
@@ -50,5 +55,9 @@ module.exports = class {
     const issue = await this.Jira.createIssue(payload)
 
     return { issue: issue.issueKey }
+  }
+
+  translateMarkdown(text) {
+    return j2m.to_jira(text)
   }
 }
