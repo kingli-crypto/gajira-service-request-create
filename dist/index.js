@@ -32564,11 +32564,12 @@ async function exec () {
 
 function parseArgs () {
   return {
-    project: core.getInput('project'),
+    servicedesk: core.getInput('servicedesk'),
     issuetype: core.getInput('issuetype'),
     summary: core.getInput('summary'),
     description: core.getInput('description'),
     fields: core.getInput('fields'),
+    raiseOnBehalfOf: core.getInput('raiseOnBehalfOf'),
   }
 }
 
