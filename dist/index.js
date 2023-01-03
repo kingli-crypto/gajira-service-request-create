@@ -21,76 +21,39 @@ module.exports = class {
 
   async execute () {
     const { argv } = this
-    const projectKey = argv.project
+    const projectKey = argv.servicedesk
     const issuetypeName = argv.issuetype
 
-    // map custom fields
-    const { projects } = await this.Jira.getCreateMeta({
-      expand: 'projects.issuetypes.fields',
-      projectKeys: projectKey,
-      issuetypeNames: issuetypeName,
-    })
+    const { values: requestTypes } = await this.Jira.getRequestTypes( projectKey )
 
-    if (projects.length === 0) {
-      console.error(`project '${projectKey}' not found`)
+    const requestTypeId = requestTypes.find((item) =>  item.name === issuetypeName )
 
-      return
+    if (!requestTypeId) throw new Error(`Unable to find issue type ${issuetypeName}`)
+
+    let providedFields = {
+      "serviceDeskId": projectKey,
+      "requestTypeId": requestTypeId.id,
     }
 
-    const [project] = projects
-
-    if (project.issuetypes.length === 0) {
-      console.error(`issuetype '${issuetypeName}' not found`)
-
-      return
-    }
-
-    let providedFields = [{
-      key: 'project',
-      value: {
-        key: projectKey,
-      },
-    }, {
-      key: 'issuetype',
-      value: {
-        name: issuetypeName,
-      },
-    }, {
-      key: 'summary',
-      value: argv.summary,
-    }]
-
-    if (argv.description) {
-      providedFields.push({
-        key: 'description',
-        value: argv.description,
-      })
+    let requestFieldValues = {
+      "summary": argv.summary,
+      "description": argv.description,
     }
 
     if (argv.fields) {
-      providedFields = [...providedFields, ...this.transformFields(argv.fields)]
+      const fields = JSON.parse(argv.fields)
+      requestFieldValues = {...requestFieldValues, ...fields}
     }
 
-    const payload = providedFields.reduce((acc, field) => {
-      acc.fields[field.key] = field.value
+    if (argv.raiseOnBehalfOf) {
+      providedFields["raiseOnBehalfOf"] = argv.raiseOnBehalfOf
+    }
 
-      return acc
-    }, {
-      fields: {},
-    })
+    const payload = {...providedFields, requestFieldValues}
 
     const issue = await this.Jira.createIssue(payload)
 
-    return { issue: issue.key }
-  }
-
-  transformFields (fieldsString) {
-    const fields = JSON.parse(fieldsString)
-
-    return Object.keys(fields).map(fieldKey => ({
-      key: fieldKey,
-      value: fields[fieldKey],
-    }))
+    return { issue: issue.issueKey }
   }
 }
 
@@ -113,13 +76,13 @@ class Jira {
     this.email = email
   }
 
-  async getCreateMeta (query) {
-    return this.fetch('getCreateMeta', { pathname: '/rest/api/2/issue/createmeta', query })
+  async getRequestTypes (projectId) {
+    return this.fetch('getCreateMeta', { pathname: `/rest/servicedeskapi/servicedesk/${projectId}/requesttype` })
   }
 
   async createIssue (body) {
     return this.fetch('createIssue',
-      { pathname: '/rest/api/2/issue' },
+      { pathname: '/rest/servicedeskapi/request' },
       { method: 'POST', body })
   }
 
@@ -128,7 +91,7 @@ class Jira {
 
     try {
       return this.fetch('getIssue', {
-        pathname: `/rest/api/2/issue/${issueId}`,
+        pathname: `/rest/servicedeskapi/request/${issueId}`,
         query: {
           fields: fields.join(','),
           expand: expand.join(','),
@@ -145,7 +108,7 @@ class Jira {
 
   async getIssueTransitions (issueId) {
     return this.fetch('getIssueTransitions', {
-      pathname: `/rest/api/2/issue/${issueId}/transitions`,
+      pathname: `/rest/servicedeskapi/request/${issueId}/transitions`,
     }, {
       method: 'GET',
     })
@@ -153,7 +116,7 @@ class Jira {
 
   async transitionIssue (issueId, data) {
     return this.fetch('transitionIssue', {
-      pathname: `/rest/api/3/issue/${issueId}/transitions`,
+      pathname: `/rest/servicedeskapi/request/${issueId}/transitions`,
     }, {
       method: 'POST',
       body: data,
@@ -199,6 +162,7 @@ class Jira {
     try {
       await client(state, `${serviceName}:${apiMethodName}`)
     } catch (error) {
+      console.log(error)
       const fields = {
         originError: error,
         source: 'jira',
@@ -210,7 +174,7 @@ class Jira {
         new Error('Jira API error'),
         state,
         fields,
-        { jiraError: state.res.body.errors })
+        { jiraError: state.res?.body?.errors })
     }
 
     return state.res.body

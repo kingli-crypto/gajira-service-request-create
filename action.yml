@@ -4,17 +4,20 @@ branding:
   icon: 'check-square'
   color: 'blue'
 inputs:
-  project:
-    description: Key of the project
+  servicedesk:
+    description: Service desk ID
     required: true
   issuetype:
-    description: "Type of the issue to be created. Example: 'Incident'"
+    description: "Type of the issue to be created. Example: 'Get IT help'"
     required: true
   summary:
     description: Issue summary
     required: true
   description:
     description: Issue description
+    required: false
+  raiseOnBehalfOf:
+    description: Raise issue on behalf of someone
     required: false
   fields:
     description: Additional fields in JSON format

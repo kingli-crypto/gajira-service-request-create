@@ -8,15 +8,15 @@ const config = {
   baseUrl,
 }
 
-const projectKey = 'TESTPROJECT'
-const issuetypeName = 'TESTISSUETYPE'
+const projectKey = '10001'
+const issuetypeName = 'Get IT Help'
 
 const { mocks } = require('./helpers')
 
 test(`Should create issue with customfield`, async () => {
   const action = new Action({
     argv: {
-      project: projectKey,
+      servicedesk: projectKey,
       issuetype: issuetypeName,
       summary: 'This is summary ref/head/blah',
       description: 'This is description ref/head/blah',
@@ -26,22 +26,17 @@ test(`Should create issue with customfield`, async () => {
   })
 
   const createMetaRequest = nock(baseUrl)
-    .get('/rest/api/2/issue/createmeta')
-    .query({
-      expand: 'projects.issuetypes.fields',
-      projectKeys: 'TESTPROJECT',
-      issuetypeNames: 'TESTISSUETYPE',
-    })
+    .get('/rest/servicedeskapi/servicedesk/10001/requesttype')
     .reply(200, mocks.jira.responses.createMeta)
 
   let createIssueRequestBody = {}
   const createIssueRequest = nock(baseUrl)
-    .post('/rest/api/2/issue')
+    .post('/rest/servicedeskapi/request')
     .reply(200, (url, body) => {
       createIssueRequestBody = body
 
       return {
-        key: 'TESTPROJECT-2',
+        issueKey: 'TESTPROJECT-2',
       }
     })
 
@@ -51,17 +46,13 @@ test(`Should create issue with customfield`, async () => {
   const result = await action.execute()
 
   expect(createIssueRequestBody).toEqual({
-    fields: {
-      project: {
-        key: projectKey,
-      },
-      issuetype: {
-        name: issuetypeName,
-      },
+    serviceDeskId: projectKey,
+    requestTypeId: "11001",
+    requestFieldValues: {
       summary: 'This is summary ref/head/blah',
       description: 'This is description ref/head/blah',
       customfield_10171: 'test',
-    },
+    }
   })
 
   expect(result).toEqual({
@@ -72,7 +63,7 @@ test(`Should create issue with customfield`, async () => {
 test(`Should create simple issue without customfield`, async () => {
   const action = new Action({
     argv: {
-      project: projectKey,
+      servicedesk: projectKey,
       issuetype: issuetypeName,
       summary: 'This is summary ref/head/blah',
       description: 'This is description ref/head/blah',
@@ -81,22 +72,17 @@ test(`Should create simple issue without customfield`, async () => {
   })
 
   const createMetaRequest = nock(baseUrl)
-    .get('/rest/api/2/issue/createmeta')
-    .query({
-      expand: 'projects.issuetypes.fields',
-      projectKeys: 'TESTPROJECT',
-      issuetypeNames: 'TESTISSUETYPE',
-    })
+    .get('/rest/servicedeskapi/servicedesk/10001/requesttype')
     .reply(200, mocks.jira.responses.createMeta)
 
   let createIssueRequestBody = {}
   const createIssueRequest = nock(baseUrl)
-    .post('/rest/api/2/issue')
+    .post('/rest/servicedeskapi/request')
     .reply(200, (url, body) => {
       createIssueRequestBody = body
 
       return {
-        key: 'TESTPROJECT-2',
+        issueKey: 'TESTPROJECT-2',
       }
     })
 
@@ -106,16 +92,12 @@ test(`Should create simple issue without customfield`, async () => {
   const result = await action.execute()
 
   expect(createIssueRequestBody).toEqual({
-    fields: {
-      project: {
-        key: projectKey,
-      },
-      issuetype: {
-        name: issuetypeName,
-      },
+    serviceDeskId: projectKey,
+    requestTypeId: "11001",
+    requestFieldValues: {
       summary: 'This is summary ref/head/blah',
       description: 'This is description ref/head/blah',
-    },
+    }
   })
 
   expect(result).toEqual({

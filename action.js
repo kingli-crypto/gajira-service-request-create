@@ -15,75 +15,38 @@ module.exports = class {
 
   async execute () {
     const { argv } = this
-    const projectKey = argv.project
+    const projectKey = argv.servicedesk
     const issuetypeName = argv.issuetype
 
-    // map custom fields
-    const { projects } = await this.Jira.getCreateMeta({
-      expand: 'projects.issuetypes.fields',
-      projectKeys: projectKey,
-      issuetypeNames: issuetypeName,
-    })
+    const { values: requestTypes } = await this.Jira.getRequestTypes( projectKey )
 
-    if (projects.length === 0) {
-      console.error(`project '${projectKey}' not found`)
+    const requestTypeId = requestTypes.find((item) =>  item.name === issuetypeName )
 
-      return
+    if (!requestTypeId) throw new Error(`Unable to find issue type ${issuetypeName}`)
+
+    let providedFields = {
+      "serviceDeskId": projectKey,
+      "requestTypeId": requestTypeId.id,
     }
 
-    const [project] = projects
-
-    if (project.issuetypes.length === 0) {
-      console.error(`issuetype '${issuetypeName}' not found`)
-
-      return
-    }
-
-    let providedFields = [{
-      key: 'project',
-      value: {
-        key: projectKey,
-      },
-    }, {
-      key: 'issuetype',
-      value: {
-        name: issuetypeName,
-      },
-    }, {
-      key: 'summary',
-      value: argv.summary,
-    }]
-
-    if (argv.description) {
-      providedFields.push({
-        key: 'description',
-        value: argv.description,
-      })
+    let requestFieldValues = {
+      "summary": argv.summary,
+      "description": argv.description,
     }
 
     if (argv.fields) {
-      providedFields = [...providedFields, ...this.transformFields(argv.fields)]
+      const fields = JSON.parse(argv.fields)
+      requestFieldValues = {...requestFieldValues, ...fields}
     }
 
-    const payload = providedFields.reduce((acc, field) => {
-      acc.fields[field.key] = field.value
+    if (argv.raiseOnBehalfOf) {
+      providedFields["raiseOnBehalfOf"] = argv.raiseOnBehalfOf
+    }
 
-      return acc
-    }, {
-      fields: {},
-    })
+    const payload = {...providedFields, requestFieldValues}
 
     const issue = await this.Jira.createIssue(payload)
 
-    return { issue: issue.key }
-  }
-
-  transformFields (fieldsString) {
-    const fields = JSON.parse(fieldsString)
-
-    return Object.keys(fields).map(fieldKey => ({
-      key: fieldKey,
-      value: fields[fieldKey],
-    }))
+    return { issue: issue.issueKey }
   }
 }
