@@ -8,7 +8,7 @@ const config = {
   baseUrl,
 }
 
-const projectKey = '10001'
+const projectKey = 'DEMO'
 const issuetypeName = 'Get IT Help'
 
 const { mocks } = require('./helpers')
@@ -40,13 +40,18 @@ test(`Should create issue with customfield`, async () => {
       }
     })
 
+  const getServicedesk = nock(baseUrl)
+    .get('/rest/servicedeskapi/servicedesk/DEMO')
+    .reply(200, { id: "10001"})
+
   await createMetaRequest
   await createIssueRequest
+  await getServicedesk
 
   const result = await action.execute()
 
   expect(createIssueRequestBody).toEqual({
-    serviceDeskId: projectKey,
+    serviceDeskId: "10001",
     requestTypeId: "11001",
     requestFieldValues: {
       summary: 'This is summary ref/head/blah',
@@ -85,14 +90,18 @@ test(`Should create simple issue without customfield`, async () => {
         issueKey: 'TESTPROJECT-2',
       }
     })
+  const getServicedesk = nock(baseUrl)
+    .get('/rest/servicedeskapi/servicedesk/DEMO')
+    .reply(200, { id: "10001"})
 
   await createMetaRequest
   await createIssueRequest
+  await getServicedesk
 
   const result = await action.execute()
 
   expect(createIssueRequestBody).toEqual({
-    serviceDeskId: projectKey,
+    serviceDeskId: "10001",
     requestTypeId: "11001",
     requestFieldValues: {
       summary: 'This is summary ref/head/blah',

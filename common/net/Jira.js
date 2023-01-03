@@ -11,6 +11,10 @@ class Jira {
     this.email = email
   }
 
+  async getServiceDesk (projectId) {
+    return this.fetch('getServiceDeskById', { pathname: `/rest/servicedeskapi/servicedesk/${projectId}` })
+  }
+
   async getRequestTypes (projectId) {
     return this.fetch('getCreateMeta', { pathname: `/rest/servicedeskapi/servicedesk/${projectId}/requesttype` })
   }

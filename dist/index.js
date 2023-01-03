@@ -24,14 +24,16 @@ module.exports = class {
     const projectKey = argv.servicedesk
     const issuetypeName = argv.issuetype
 
-    const { values: requestTypes } = await this.Jira.getRequestTypes( projectKey )
+    const { id: serviceDeskId } = await this.Jira.getServiceDesk( projectKey )
+
+    const { values: requestTypes } = await this.Jira.getRequestTypes( serviceDeskId )
 
     const requestTypeId = requestTypes.find((item) =>  item.name === issuetypeName )
 
     if (!requestTypeId) throw new Error(`Unable to find issue type ${issuetypeName}`)
 
     let providedFields = {
-      "serviceDeskId": projectKey,
+      "serviceDeskId": serviceDeskId,
       "requestTypeId": requestTypeId.id,
     }
 
@@ -74,6 +76,10 @@ class Jira {
     this.baseUrl = baseUrl
     this.token = token
     this.email = email
+  }
+
+  async getServiceDesk (projectId) {
+    return this.fetch('getServiceDeskById', { pathname: `/rest/servicedeskapi/servicedesk/${projectId}` })
   }
 
   async getRequestTypes (projectId) {
