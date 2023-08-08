@@ -34,7 +34,7 @@ module.exports = class {
 
     let requestFieldValues = {
       "summary": argv.summary,
-      "description": this.translateMarkdown(argv.description),
+      "description": this.translateMarkdown(argv.description).slice(0, 32000), // prevent string overflow. Jira is limited
     }
 
     if (argv.fields) {
